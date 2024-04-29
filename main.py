@@ -27,14 +27,24 @@ class GuildConfig(BaseModel):
         return all([(c in role.name) for c in self.divider_contains])
 
     async def fix_member_roles(self, member: Member):
-
+        member.guild.roles.sort(key=lambda r: r.position, reverse=True)
+        console.log(member.guild.roles)
         current_divider: Role = None
+        added_divider = False
+
         for role in member.guild.roles:
-            console.log(role)
             if self.is_divider(role):
                 current_divider = role
-            
+                if not added_divider:
+                    await member.remove_role(current_divider)
+                added_divider = False
 
+
+            if member.has_role(role):
+                if current_divider:
+                    added_divider = True
+                    await member.add_roles(current_divider)
+                
 
 async def load_config(guild_id: int) -> GuildConfig:
     try:
@@ -127,6 +137,7 @@ class RoleDivider(interactions.Extension):
     async def manual_fix(self, ctx: interactions.SlashContext, member: Member = None):
         config = await load_config(ctx.guild_id)
         await config.fix_member_roles(member)
+
         # effect_list = await fix_gossiper_role(ctx.guild)
         # await ctx.respond(
         #     f"修復了{len(effect_list)}位成員的吃瓜觀光團身份組狀態。", ephemeral=True
