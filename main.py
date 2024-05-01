@@ -37,9 +37,9 @@ class GuildConfig(BaseModel):
 
         for role in member.guild.roles:
             if self.is_divider(role):
-                current_divider = role
-                if not added_divider:
+                if not added_divider and current_divider:
                     await member.remove_role(current_divider)
+                current_divider = role
                 added_divider = False
 
             if member.has_role(role):
