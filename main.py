@@ -43,7 +43,7 @@ class GuildConfig(BaseModel):
             if member.has_role(role):
                 if current_divider:
                     added_divider = True
-                    await member.add_roles(current_divider)
+                    await member.add_role(current_divider)
                 
 
 async def load_config(guild_id: int) -> GuildConfig:
