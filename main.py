@@ -1,19 +1,22 @@
 import os
+
 import aiofiles
-import interactions
 from interactions import (
-    Button,
-    ButtonStyle,
-    AutocompleteContext,
+
+    Extension,
+    Embed,
+    SlashCommand,
+    Permissions,
+    SlashContext,
+    listen,
     slash_option,
     OptionType,
     Member,
     Role,
 )
+from interactions.api.events import MemberUpdate
 
 from pydantic import BaseModel
-
-
 from rich.console import Console
 
 
@@ -39,19 +42,17 @@ class GuildConfig(BaseModel):
                     await member.remove_role(current_divider)
                 added_divider = False
 
-
             if member.has_role(role):
                 if current_divider:
                     added_divider = True
                     await member.add_role(current_divider)
-                
+
 
 async def load_config(guild_id: int) -> GuildConfig:
     try:
         async with aiofiles.open(generate_path(guild_id), "r") as f:
             config = GuildConfig.model_validate_json(await f.read())
-    except Exception as e:
-        console.log(f"[red] Error occur: {e} when load_config")
+    except FileNotFoundError:
         config = GuildConfig()
 
     return config
@@ -62,8 +63,8 @@ async def save_config(guild_id: int, config: GuildConfig):
         await f.write(config.model_dump_json(indent=4))
 
 
-async def is_admin(ctx: interactions.SlashContext) -> bool:
-    return ctx.author.has_permission(interactions.Permissions.ADMINISTRATOR)
+async def is_admin(ctx: SlashContext) -> bool:
+    return ctx.author.has_permission(Permissions.ADMINISTRATOR)
 
 
 def generate_path(guild_id: int):
@@ -75,18 +76,18 @@ class GuildRoleDivider:
         self.guilld_id = guild_id
 
 
-class RoleDivider(interactions.Extension):
-    module_base: interactions.SlashCommand = interactions.SlashCommand(
+class RoleDivider(Extension):
+    module_base: SlashCommand = SlashCommand(
         name="role_divider",
         description="自動添加分隔用身份組給每一位成員，注意分隔用身份組本身的權限",
         checks=[is_admin],
     )
 
     @module_base.subcommand("help", sub_cmd_description="顯示關於分隔用身份組的介紹")
-    async def help(self, ctx: interactions.SlashContext):
+    async def help(self, ctx: SlashContext):
         config = await load_config(ctx.guild_id)
         await ctx.respond(
-            embed=interactions.Embed(
+            embed=Embed(
                 title="分隔用身份組",
                 description=f"""
 分隔用身份組模組，會自動化添加分隔用身份組給需要的人，請注意分隔身份組本身自帶的權限，以避免安全隱患。
@@ -113,7 +114,7 @@ class RoleDivider(interactions.Extension):
     )
     async def config(
         self,
-        ctx: interactions.SlashContext,
+        ctx: SlashContext,
         divider_contains: str = None,
     ):
 
@@ -134,11 +135,15 @@ class RoleDivider(interactions.Extension):
         required=False,
         opt_type=OptionType.USER,
     )
-    async def manual_fix(self, ctx: interactions.SlashContext, member: Member = None):
+    async def manual_fix(self, ctx: SlashContext, member: Member = None):
         config = await load_config(ctx.guild_id)
-        await config.fix_member_roles(member)
+        if member:
+            await config.fix_member_roles(member)
+        else:
+            for m in ctx.guild.members:
+                await config.fix_member_roles(m)
 
-        # effect_list = await fix_gossiper_role(ctx.guild)
-        # await ctx.respond(
-        #     f"修復了{len(effect_list)}位成員的吃瓜觀光團身份組狀態。", ephemeral=True
-        # )
+    @listen(MemberUpdate)
+    async def an_event_handler(self, event: MemberUpdate):
+        config = await load_config(event.guild_id)
+        await config.fix_member_roles(event.after)
