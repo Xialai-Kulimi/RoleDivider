@@ -2,7 +2,6 @@ import os
 
 import aiofiles
 from interactions import (
-
     Extension,
     Embed,
     SlashCommand,
@@ -36,16 +35,28 @@ class GuildConfig(BaseModel):
         added_divider = False
 
         for role in member.guild.roles:
+            console.log(f"checking {role.name}")
             if self.is_divider(role):
+                console.log(f"{role.name} is a divider")
                 if not added_divider and current_divider:
+                    console.log(f"remove {role.name} for {member}")
                     await member.remove_role(current_divider)
                 current_divider = role
                 added_divider = False
 
-            if member.has_role(role) and not role.default:
-                if current_divider:
-                    added_divider = True
-                    await member.add_role(current_divider)
+            if (
+                member.has_role(role)
+                and not role.default
+                and current_divider
+                and not added_divider
+            ):
+                added_divider = True
+                console.log(f"add {role.name} for {member}")
+                await member.add_role(current_divider)
+
+        if not added_divider and current_divider:
+            console.log(f"remove {role.name} for {member}")
+            await member.remove_role(current_divider)
 
 
 async def load_config(guild_id: int) -> GuildConfig:
