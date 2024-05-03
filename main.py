@@ -98,7 +98,7 @@ class RoleDivider(Extension):
 ## 介紹
 0. 只有管理員可以使用本模組的指令。
 1. 任一非分隔身份組的分隔用身份組，為前一個最近的分隔用身份組
-2. 按照目前的設定，同時包含{'、'.join(['「'+c+'」' for c in config.divider_contains.split()])}的身份組將會被視為分隔用身份組。
+2. 按照目前的設定，同時包含{'、'.join(['「'+c+'」' for c in config.divider_contains.split('')])}的身份組將會被視為分隔用身份組。
 
 """,
                 color=0xFF5252,
