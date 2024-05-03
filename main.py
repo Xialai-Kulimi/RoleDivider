@@ -29,32 +29,45 @@ class GuildConfig(BaseModel):
         return all([(c in role.name) for c in self.divider_contains])
 
     async def fix_member_roles(self, member: Member):
-        member.guild.roles.sort(key=lambda r: r.position, reverse=True)
+        member.guild.roles.sort(key=lambda r: r.position)
         console.log(member.guild.roles)
-        current_divider: Role = None
-        added_divider = False
+        # current_divider: Role = None
+        should_add_divider = False
 
         for role in member.guild.roles:
             console.log(f"checking {role.name}")
             if self.is_divider(role):
-                console.log(f"{role.name} is a divider")
-                if not added_divider and current_divider:
+                if should_add_divider:
+                    console.log(f"add {role.name} for {member}")
+                    await member.add_role(role)
+                else:
                     console.log(f"remove {role.name} for {member}")
-                    await member.remove_role(current_divider)
-                current_divider = role
-                added_divider = False
+                    await member.remove_role(role)
+                should_add_divider = False
 
-            if (
-                member.has_role(role)
-                and not role.default
-                and current_divider
-                and not added_divider
-            ):
-                added_divider = True
-                console.log(f"add {role.name} for {member}")
-                await member.add_role(current_divider)
+            else:
+                if member.has_role(role) and not role.default:
+                    should_add_divider = True
 
-        if not added_divider and current_divider:
+            # if self.is_divider(role):
+            #     console.log(f"{role.name} is a divider")
+            #     if not should_add_divider and current_divider:
+            #         console.log(f"remove {role.name} for {member}")
+            #         await member.remove_role(current_divider)
+            #     current_divider = role
+            #     should_add_divider = False
+
+            # if (
+            #     member.has_role(role)
+            #     and not role.default
+            #     and current_divider
+            #     and not should_add_divider
+            # ):
+            #     should_add_divider = True
+            #     console.log(f"add {role.name} for {member}")
+            #     await member.add_role(current_divider)
+
+        if not should_add_divider and current_divider:
             console.log(f"remove {role.name} for {member}")
             await member.remove_role(current_divider)
 
