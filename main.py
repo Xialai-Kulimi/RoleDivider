@@ -42,7 +42,7 @@ class GuildConfig(BaseModel):
                 current_divider = role
                 added_divider = False
 
-            if member.has_role(role):
+            if member.has_role(role) and not role.default:
                 if current_divider:
                     added_divider = True
                     await member.add_role(current_divider)
