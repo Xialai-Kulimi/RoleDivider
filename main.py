@@ -29,12 +29,14 @@ class GuildConfig(BaseModel):
         return all([(c in role.name) for c in self.divider_contains])
 
     async def fix_member_roles(self, member: Member):
-        member.guild.roles.sort(key=lambda r: r.position, reverse=True)
-        console.log(member.guild.roles)
+
+        roles_reversed = member.guild.roles.copy()
+        roles_reversed.sort(key=lambda r: r.position)
+        console.log(roles_reversed)
         # current_divider: Role = None
         should_add_divider = False
 
-        for role in member.guild.roles:
+        for role in roles_reversed:
             console.log(f"checking {role.name}")
             if self.is_divider(role):
                 if should_add_divider:
