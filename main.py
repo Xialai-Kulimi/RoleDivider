@@ -29,7 +29,7 @@ class GuildConfig(BaseModel):
         return all([(c in role.name) for c in self.divider_contains])
 
     async def fix_member_roles(self, member: Member):
-        member.guild.roles.sort(key=lambda r: r.position)
+        member.guild.roles.sort(key=lambda r: r.position, reverse=True)
         console.log(member.guild.roles)
         # current_divider: Role = None
         should_add_divider = False
@@ -67,9 +67,9 @@ class GuildConfig(BaseModel):
             #     console.log(f"add {role.name} for {member}")
             #     await member.add_role(current_divider)
 
-        if not should_add_divider and current_divider:
-            console.log(f"remove {role.name} for {member}")
-            await member.remove_role(current_divider)
+        # if not should_add_divider and current_divider:
+        #     console.log(f"remove {role.name} for {member}")
+        #     await member.remove_role(current_divider)
 
 
 async def load_config(guild_id: int) -> GuildConfig:
