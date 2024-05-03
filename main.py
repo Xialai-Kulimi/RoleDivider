@@ -32,46 +32,23 @@ class GuildConfig(BaseModel):
 
         roles_reversed = member.guild.roles.copy()
         roles_reversed.sort(key=lambda r: r.position)
-        console.log(roles_reversed)
-        # current_divider: Role = None
         should_add_divider = False
 
         for role in roles_reversed:
-            console.log(f"checking {role.name}")
             if self.is_divider(role):
                 if should_add_divider:
-                    console.log(f"add {role.name} for {member}")
-                    await member.add_role(role)
+                    if not member.has_role(role):
+                        console.log(f"[RoleDivider] add {role.name} for {member}")
+                        await member.add_role(role)
                 else:
-                    console.log(f"remove {role.name} for {member}")
-                    await member.remove_role(role)
+                    if member.has_role(role):
+                        console.log(f"[RoleDivider] remove {role.name} for {member}")
+                        await member.remove_role(role)
                 should_add_divider = False
 
             else:
                 if member.has_role(role) and not role.default:
                     should_add_divider = True
-
-            # if self.is_divider(role):
-            #     console.log(f"{role.name} is a divider")
-            #     if not should_add_divider and current_divider:
-            #         console.log(f"remove {role.name} for {member}")
-            #         await member.remove_role(current_divider)
-            #     current_divider = role
-            #     should_add_divider = False
-
-            # if (
-            #     member.has_role(role)
-            #     and not role.default
-            #     and current_divider
-            #     and not should_add_divider
-            # ):
-            #     should_add_divider = True
-            #     console.log(f"add {role.name} for {member}")
-            #     await member.add_role(current_divider)
-
-        # if not should_add_divider and current_divider:
-        #     console.log(f"remove {role.name} for {member}")
-        #     await member.remove_role(current_divider)
 
 
 async def load_config(guild_id: int) -> GuildConfig:
@@ -163,11 +140,13 @@ class RoleDivider(Extension):
     )
     async def manual_fix(self, ctx: SlashContext, member: Member = None):
         config = await load_config(ctx.guild_id)
+        await ctx.defer()
         if member:
             await config.fix_member_roles(member)
         else:
             for m in ctx.guild.members:
                 await config.fix_member_roles(m)
+        await ctx.respond("完成")
 
     @listen(MemberUpdate)
     async def an_event_handler(self, event: MemberUpdate):
